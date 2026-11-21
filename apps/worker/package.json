@@ -1,0 +1,28 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --type-aware src/",
+    "test": "tsx --test src/jobs.test.ts src/runtime.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "oxlint": "^1.58.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "api": "workspace:*",
+    "bullmq": "^6.3.10",
+    "dotenv": "^18.0.5",
+    "ioredis": "^6.0.0"
+  }
+}

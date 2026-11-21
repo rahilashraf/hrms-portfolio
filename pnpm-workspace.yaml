@@ -1,0 +1,20 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  argon2: true
+  '@prisma/engines': true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  unrs-resolver: true
+# Security fixes for exact-pinned transitive dependencies: prisma pins mysql2 3.15.3, and
+# @prisma/config 7.10.0 pins deepmerge-ts 7.1.5 (@prisma/config 7.10.1 is the same code with
+# deepmerge-ts 8.0.2). Remove the deepmerge-ts override once prisma is upgraded to 7.10.1 or later.
+# @prisma/config 7.10.0 also pins effect 3.20.0 (GHSA-7589-6fvf-x4pw, fixed in 3.22.1); the override
+# covers every effect instance, including the optional @hookform/resolvers peer. Remove it once the
+# installed @prisma/config depends on effect 3.22.1 or later.
+overrides:
+  'prisma>mysql2': ^3.24.5
+  '@prisma/config>deepmerge-ts': 8.0.2
+  effect: 3.22.1

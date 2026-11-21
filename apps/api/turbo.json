@@ -1,0 +1,25 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build", "//#db:generate"],
+      "outputs": ["dist/**"]
+    },
+    "dev": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck", "//#db:generate"]
+    },
+    "lint": {
+      "dependsOn": ["^lint", "//#db:generate"]
+    },
+    "test": {
+      "dependsOn": ["^build", "//#db:generate"],
+      "outputs": ["coverage/**"]
+    }
+  }
+}

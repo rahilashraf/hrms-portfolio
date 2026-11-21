@@ -1,0 +1,2 @@
+ALTER TYPE "AttendanceExceptionType" ADD VALUE 'LATE_ARRIVAL';
+ALTER TYPE "AttendanceExceptionType" ADD VALUE 'EARLY_DEPARTURE';

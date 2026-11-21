@@ -1,0 +1,139 @@
+{
+  "name": "api",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./scheduling-jobs": {
+      "types": "./dist/scheduling/generation-job.d.ts",
+      "default": "./dist/scheduling/generation-job.js"
+    },
+    "./leave-jobs": {
+      "types": "./dist/leave/leave-jobs.d.ts",
+      "default": "./dist/leave/leave-jobs.js"
+    },
+    "./employee-jobs": {
+      "types": "./dist/employee/employee-jobs.d.ts",
+      "default": "./dist/employee/employee-jobs.js"
+    },
+    "./time-jobs": {
+      "types": "./dist/time/time-jobs.d.ts",
+      "default": "./dist/time/time-jobs.js"
+    },
+    "./payroll-jobs": {
+      "types": "./dist/payroll/payroll-jobs.d.ts",
+      "default": "./dist/payroll/payroll-jobs.js"
+    },
+    "./performance-jobs": {
+      "types": "./dist/performance/performance-jobs.d.ts",
+      "default": "./dist/performance/performance-jobs.js"
+    },
+    "./recruitment-jobs": {
+      "types": "./dist/recruitment/recruitment-jobs.d.ts",
+      "default": "./dist/recruitment/recruitment-jobs.js"
+    },
+    "./onboarding-jobs": {
+      "types": "./dist/onboarding/onboarding-jobs.d.ts",
+      "default": "./dist/onboarding/onboarding-jobs.js"
+    },
+    "./documents-jobs": {
+      "types": "./dist/documents/documents-jobs.d.ts",
+      "default": "./dist/documents/documents-jobs.js"
+    },
+    "./notifications-jobs": {
+      "types": "./dist/notifications/notifications-jobs.d.ts",
+      "default": "./dist/notifications/notifications-jobs.js"
+    },
+    "./account-email-jobs": {
+      "types": "./dist/auth/account-email-jobs.d.ts",
+      "default": "./dist/auth/account-email-jobs.js"
+    },
+    "./auth-retention-jobs": {
+      "types": "./dist/sessions/auth-retention-jobs.d.ts",
+      "default": "./dist/sessions/auth-retention-jobs.js"
+    },
+    "./google-workspace-jobs": {
+      "types": "./dist/integrations/google/google-workspace-jobs.d.ts",
+      "default": "./dist/integrations/google/google-workspace-jobs.js"
+    },
+    "./retention-jobs": {
+      "types": "./dist/retention/retention-jobs.d.ts",
+      "default": "./dist/retention/retention-jobs.js"
+    },
+    "./platform-health": {
+      "types": "./dist/health/health-checks.d.ts",
+      "default": "./dist/health/health-checks.js"
+    }
+  },
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "oxlint --type-aware src/ test/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "test:db": "vitest run --config ./vitest.config.db.ts",
+    "test:debug": "vitest --inspect-brk --no-file-parallelism",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "typecheck": "tsc --noEmit",
+    "authz:sync-permissions": "node dist/authorization/cli.js sync-permissions",
+    "authz:bootstrap-owner": "node dist/authorization/cli.js bootstrap-owner",
+    "authz:create-initial-user": "node dist/authorization/cli.js create-initial-user",
+    "db:seed": "tsx prisma/seed.ts",
+    "demo": "tsx demo/demo-cli.ts",
+    "scheduling:extend-generated-shifts": "node dist/scheduling/cli.js extend-generated-shifts",
+    "leave:process-entitlements": "node dist/leave/cli.js process-entitlements",
+    "dev": "nest start --watch"
+  },
+  "dependencies": {
+    "@hrms/config": "workspace:*",
+    "@hrms/validation": "workspace:*",
+    "@nestjs/common": "^12.3.3",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^12.3.3",
+    "@nestjs/platform-express": "^12.3.3",
+    "@prisma/adapter-pg": "^7.10.0",
+    "argon2": "^0.44.0",
+    "aws4fetch": "1.0.20",
+    "bullmq": "^6.3.10",
+    "busboy": "1.6.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "cookie-parser": "^1.4.7",
+    "ioredis": "^6.0.0",
+    "jose": "^6.1.0",
+    "nodemailer": "^10.2.1",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.13",
+    "@nestjs/schematics": "^12.0.0",
+    "@nestjs/testing": "^12.3.3",
+    "@types/busboy": "1.5.4",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "@types/smtp-server": "^3.5.13",
+    "@types/supertest": "^7.0.0",
+    "@vitest/coverage-v8": "^4.1.12",
+    "oxlint": "^1.58.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "prettier": "^3.4.2",
+    "smtp-server": "^3.21.1",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^4.1.12"
+  }
+}

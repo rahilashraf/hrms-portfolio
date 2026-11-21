@@ -1,0 +1,22 @@
+name: Set up workspace
+description: Installs Node.js, pnpm and the locked dependencies, then generates the Prisma client.
+
+runs:
+  using: composite
+  steps:
+    # The pnpm version comes from the root package.json `packageManager` field.
+    - uses: pnpm/action-setup@v4
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    # Generation needs no database (see prisma.config.ts).
+    - name: Generate Prisma client
+      shell: bash
+      run: pnpm db:generate

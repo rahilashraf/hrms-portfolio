@@ -1,0 +1,276 @@
+name: Integration
+
+# The slower suites, separate from the fast checks in ci.yml: database and HTTP specs,
+# the mocked Playwright suite, the real-stack Playwright suite and the demo smoke suite. Each job
+# talks only to its own throwaway service containers. Pull requests that change documentation
+# only skip this workflow; pushes to main always run it.
+on:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+# CI uses no repository secrets and reaches no deployed environment. Every value below is a
+# throwaway or a placeholder; the integration job talks only to its own service containers.
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+  NEXT_TELEMETRY_DISABLED: '1'
+  # The web build and route type generation require an HTTPS API origin. `.invalid` is a
+  # reserved TLD that never resolves, so nothing can reach a real API.
+  NEXT_PUBLIC_API_URL: https://api.ci.invalid
+
+jobs:
+  integration:
+    name: Database and API e2e tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hrms
+          POSTGRES_USER: hrms
+          POSTGRES_PASSWORD: hrms_ci_password
+        ports:
+          - 5436:5432
+        options: >-
+          --health-cmd "pg_isready -U hrms -d hrms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://hrms:hrms_ci_password@localhost:5436/hrms?schema=public
+      REDIS_URL: redis://localhost:6380
+      # Same Argon2 settings as .env.example; the test suites create their own JWT secrets.
+      ARGON2_MEMORY_COST_KIB: '65536'
+      ARGON2_TIME_COST: '3'
+      ARGON2_PARALLELISM: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Apply migrations to the CI database
+        run: pnpm db:migrate:deploy
+
+      - name: Run database specs
+        run: pnpm --filter api test:db
+
+      - name: Run API e2e specs
+        run: pnpm --filter api test:e2e
+
+  web-e2e:
+    name: Web end-to-end tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      # Browsers are cached by Playwright version (from the lockfile); --with-deps still installs
+      # the system libraries on a cache hit.
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install the Playwright browser
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      # The specs mock every API call (page.route). Playwright builds the web app for production
+      # (next build, then next start) against a never-resolving HTTPS API origin
+      # (apps/web/e2e/support/api-origin.ts), so nothing outside the runner is reached.
+      - name: Run the Playwright suite against a production build
+        run: pnpm --filter web test:e2e
+
+      - name: Keep the report of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7
+
+  # The browser drives the real web app, the real API and this job's own throwaway
+  # PostgreSQL and Redis service containers; nothing is mocked. The run seeds a new organization
+  # with random names and passwords; the seed and the Playwright config refuse any non-local
+  # database or Redis. No secret, deployed service or production data is involved.
+  web-e2e-real:
+    name: Web end-to-end tests (real stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          # The real-stack guards accept only a local, marked `*_disposable` database.
+          POSTGRES_DB: hrms_e2e_disposable
+          POSTGRES_USER: hrms
+          POSTGRES_PASSWORD: hrms_ci_password
+        ports:
+          - 5436:5432
+        options: >-
+          --health-cmd "pg_isready -U hrms -d hrms_e2e_disposable"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://hrms:hrms_ci_password@localhost:5436/hrms_e2e_disposable?schema=public
+      REDIS_URL: redis://localhost:6380
+      ARGON2_MEMORY_COST_KIB: '65536'
+      ARGON2_TIME_COST: '3'
+      ARGON2_PARALLELISM: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Apply migrations to the CI database
+        run: pnpm db:migrate:deploy
+
+      # Marks this job's new, migrated database as disposable (refused for any database that is
+      # not local, not named *_disposable or already holds accounts).
+      - name: Mark the job's database as a disposable test database
+        run: pnpm --filter api exec tsx test/real-stack/disposable-database-cli.ts mark
+        env:
+          REAL_STACK_E2E: '1'
+
+      - name: Build the API
+        run: pnpm --filter api build
+
+      # Browsers are cached by Playwright version (from the lockfile); --with-deps still installs
+      # the system libraries on a cache hit.
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install the Playwright browser
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      # Starts the built API (loopback :3201) and the web app under next dev (loopback :3200;
+      # a production web build requires an HTTPS API origin), seeds, then runs e2e-real/.
+      - name: Run the real-stack Playwright suite
+        run: pnpm --filter web test:e2e:real
+
+      - name: Keep the report of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-real
+          # Never the seed file (apps/web/e2e-real/.seed): it holds this run's passwords.
+          path: |
+            apps/web/playwright-report-real
+            apps/web/test-results-real
+          retention-days: 7
+
+  # The seven-account demo smoke suite against a freshly seeded demo, exactly as a
+  # developer runs it: `pnpm demo` against this job's own service containers (--no-docker), then
+  # apps/web/e2e-demo. Synthetic data only. The demo passwords are generated in the job and never
+  # leave it: `pnpm demo` doesn't print them when CI is set, and .demo/ is not uploaded.
+  demo-smoke:
+    name: Demo setup and smoke test
+    runs-on: ubuntu-latest
+    # Each of the three `pnpm demo` runs below rebuilds the API and worker.
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          # The demo creates its own hrms_demo database next to this one.
+          POSTGRES_DB: hrms
+          POSTGRES_USER: hrms
+          POSTGRES_PASSWORD: hrms_dev_password
+        ports:
+          - 5436:5432
+        options: >-
+          --health-cmd "pg_isready -U hrms -d hrms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      # Browsers are cached by Playwright version (from the lockfile); --with-deps still installs
+      # the system libraries on a cache hit.
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install the Playwright browser
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      # Uses .env.example's local addresses (localhost:5436 and :6380, the service ports above).
+      - name: Create, migrate, mark and seed the demo database
+        run: pnpm demo --setup-only --no-docker
+
+      - name: Seed again (must create nothing)
+        # bash -eo pipefail, so a failing `pnpm demo` isn't hidden by tee.
+        shell: bash
+        run: |
+          pnpm demo --setup-only --no-docker | tee seed-rerun.log
+          grep -q '"created": {}' seed-rerun.log
+
+      - name: Start the demo (API, worker, web)
+        run: |
+          nohup pnpm demo --no-docker > demo.log 2>&1 &
+          for i in $(seq 1 180); do curl -sf http://localhost:3000/login >/dev/null && exit 0; sleep 2; done
+          cat demo.log; exit 1
+
+      # The seed's own sign-ins count against the per-address sign-in limit (10 a minute); the
+      # suite waits out a short limit itself.
+      - name: Run the demo smoke suite
+        run: pnpm --filter web test:e2e:demo
+
+      - name: Keep the report of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-smoke
+          # Never .demo/ (it holds this run's generated passwords).
+          path: |
+            demo.log
+            apps/web/test-results-demo
+          retention-days: 7

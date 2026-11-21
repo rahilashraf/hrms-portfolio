@@ -1,0 +1,80 @@
+name: CI
+
+# The fast checks every pull request needs (format, lint, typecheck, unit tests and
+# builds, no services). The database, browser and demo suites are in integration.yml.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# CI uses no repository secrets and reaches no deployed environment. Every value below is a
+# throwaway or a placeholder.
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+  NEXT_TELEMETRY_DISABLED: '1'
+  # The web build and route type generation require an HTTPS API origin. `.invalid` is a
+  # reserved TLD that never resolves, so nothing can reach a real API.
+  NEXT_PUBLIC_API_URL: https://api.ci.invalid
+
+jobs:
+  checks:
+    name: Format, lint and typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      # Next.js generates the route and layout types (for example LayoutProps) that the web
+      # typecheck relies on.
+      - name: Generate Next.js route types
+        run: pnpm --filter web typegen
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      # API and web Vitest suites, and the worker tests (Turbo builds the API first).
+      - name: Run unit tests
+        run: pnpm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      # Next.js reuses its build cache between runs (safe: keyed on the lockfile and sources).
+      - name: Cache the Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: apps/web/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/web/src/**', 'apps/web/next.config.ts') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+
+      - name: Build api, worker and web
+        run: pnpm build

@@ -1,0 +1,69 @@
+@import 'tailwindcss';
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  /* Phase 20 — accent palette. The shell overrides these from organization branding only when
+     the brand color keeps 4.5:1 contrast (lib/branding/color.ts); these are the defaults. */
+  --hrms-accent: #4338ca;
+  --hrms-on-accent: #ffffff;
+  --hrms-accent-text: #4338ca;
+  --hrms-secondary: #4338ca;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+/* Phase 20 — a visible keyboard focus ring for every interactive element by default. Batch 3A: it
+   follows organization branding; the accent text color keeps at least 4.5:1 on white.
+   Batch 11C — components that draw their own ring (a box-shadow) opt out of this outline with
+   `outline-hidden`, never `outline-none`: Windows forced-colours mode removes box-shadows, and
+   Tailwind's `outline-hidden` keeps a transparent 2px outline there, which the system paints in
+   its focus colour. `outline-none` is kept only on non-interactive elements that receive focus
+   programmatically (tabIndex={-1}: <main>, dialog and kiosk headings). The rule is pinned by
+   e2e/forced-colors-focus.spec.ts and src/lib/a11y/focus-classes.test.ts. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--hrms-accent-text);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Batch 6A — printing a pay statement (browser print / Save as PDF): only the statement is
+   printed, on white, full width; screen-only controls inside it carry print:hidden. */
+@media print {
+  body:has(.payslip-print-root) * {
+    visibility: hidden;
+  }
+  body:has(.payslip-print-root) .payslip-print-root,
+  body:has(.payslip-print-root) .payslip-print-root * {
+    visibility: visible;
+  }
+  .payslip-print-root {
+    position: absolute;
+    inset: 0 0 auto 0;
+    width: 100%;
+    background: #fff;
+    color: #000;
+  }
+  @page {
+    margin: 15mm;
+  }
+}

@@ -195,10 +195,10 @@ not been observed passing for recent changes;** the results below come from loca
 
 ## Latest recorded results
 
-Local runs at commit `8e21496` with Node.js 24.22.1 and pnpm 12.8.1, on a disposable
-PostgreSQL 16 database and Redis. These are not CI results. A later commit changed only
-documentation and a configuration comment; the frozen install, formatting and the documentation
-link checks were rerun.
+Local validation of the source snapshot used Node.js 24.22.1 and pnpm 12.8.1, on a disposable
+PostgreSQL 16 database and Redis. These are local results, not GitHub Actions results. After the
+application-code validation, documentation and a configuration comment were revised; the frozen
+install, formatting and documentation link checks affected by those revisions were rerun.
 
 | Stage                                                  | Result                                                                                        |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------- |

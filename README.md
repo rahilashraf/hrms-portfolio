@@ -220,9 +220,9 @@ The integration and browser suites need local PostgreSQL and Redis and a migrate
 All suites have been run locally. An intermittent database test failure (an audit entry not
 found under parallel load) was traced to another test's cleanup deleting entries it did not own,
 and fixed; see [docs/testing.md](docs/testing.md#resolved-intermittent-invitation-role-race-failure).
-GitHub Actions workflows
-(`.github/workflows/ci.yml` and `integration.yml`) are defined, but they have not been observed
-passing for recent changes. Details: [docs/testing.md](docs/testing.md).
+GitHub Actions workflows (`.github/workflows/ci.yml` and `integration.yml`) have passed on
+the public portfolio repository's `main` commit `e515e4a` (all seven jobs, including the
+browser and demo suites). Details: [docs/testing.md](docs/testing.md).
 
 ## Security architecture
 

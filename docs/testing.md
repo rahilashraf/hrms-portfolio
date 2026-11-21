@@ -190,8 +190,12 @@ Two GitHub Actions workflows are defined:
   PostgreSQL 17 and Redis 7 service containers. Pull requests that change only documentation
   skip it.
 
-Neither workflow uses repository secrets or reaches a deployed environment. **The workflows have
-not been observed passing for recent changes;** the results below come from local runs.
+Neither workflow uses repository secrets or reaches a deployed environment. **Both workflows
+passed on the public portfolio repository's `main` commit `e515e4a`**, after the R5-C validation
+PR was squash-merged: [CI](https://github.com/rahilashraf/hrms-portfolio/actions/runs/44861403878)
+and [Integration](https://github.com/rahilashraf/hrms-portfolio/actions/runs/44861403875).
+All seven jobs completed successfully. The earlier results below are a separate record of local
+validation, not GitHub Actions test results.
 
 ## Latest recorded results
 

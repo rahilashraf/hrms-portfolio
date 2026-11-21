@@ -15,11 +15,13 @@ import { useDocumentTitle } from '../ui/use-document-title';
  */
 export function AuthShell({
   title,
+  documentTitle,
   description,
   children,
   branding = null,
 }: {
   title: string;
+  documentTitle?: string;
   description: string;
   children: ReactNode;
   branding?: PublicBranding | null;
@@ -29,9 +31,9 @@ export function AuthShell({
   const logo = [branding?.loginLogoUrl, branding?.iconUrl].find((url) => isSafeHttpsUrl(url));
   const website = isSafeHttpsUrl(branding?.websiteUrl) ? branding!.websiteUrl! : null;
   const support = branding?.supportEmail ?? null;
-  // Batch 11C: each signed-out page names itself (forgot password, reset, invitation…); a page
-  // that sets its own title (sign-in) still wins, because a parent's effect runs after this one.
-  useDocumentTitle(`${title} · ${branding?.shortName || name}`);
+  // The visible heading and browser title can differ (for example, the sign-in page).
+  // Keep one title owner for the auth shell to avoid competing effects.
+  useDocumentTitle(`${documentTitle ?? title} · ${branding?.shortName || name}`);
   return (
     <main
       className="flex min-h-screen items-center justify-center px-4 py-12"

@@ -13,7 +13,6 @@ import { authErrorMessage, rateLimitedMessage } from '../../../lib/auth/error-me
 import { brandingApi } from '../../../lib/branding/api';
 import { DEFAULT_PUBLIC_BRANDING, type PublicBranding } from '../../../lib/branding/types';
 import { useAuth } from '../../../providers/auth-provider';
-import { useDocumentTitle } from '../../../components/ui/use-document-title';
 
 export default function LoginPage() {
   const { status, login } = useAuth();
@@ -39,8 +38,6 @@ export default function LoginPage() {
       active = false;
     };
   }, []);
-
-  useDocumentTitle(`Sign in · ${branding.shortName || branding.displayName || 'HRMS'}`);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,6 +65,7 @@ export default function LoginPage() {
     <AuthShell
       branding={branding}
       title="Sign in to your account"
+      documentTitle="Sign in"
       description="Use the email address associated with your account."
     >
       <form onSubmit={(event) => void submit(event)} className="space-y-5">

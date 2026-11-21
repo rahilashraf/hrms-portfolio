@@ -194,7 +194,7 @@ jobs:
             apps/web/test-results-real
           retention-days: 7
 
-  # The seven-account demo smoke suite against a freshly seeded demo, exactly as a
+  # The eight-account demo smoke suite against a freshly seeded demo, exactly as a
   # developer runs it: `pnpm demo` against this job's own service containers (--no-docker), then
   # apps/web/e2e-demo. Synthetic data only. The demo passwords are generated in the job and never
   # leave it: `pnpm demo` doesn't print them when CI is set, and .demo/ is not uploaded.
